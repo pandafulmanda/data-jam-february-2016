@@ -1,0 +1,46 @@
+html, body {
+  padding: 0;
+  margin: 0;
+  width: 100%;
+  height: 100%;
+}
+
+body {
+  font-family: 'Open Sans', sans-serif;
+  color: #333;
+}
+
+canvas {
+  margin: auto;
+  display: block;
+  position: absolute;
+  top: 0;
+}
+
+#time-info {
+  position: absolute;
+  bottom: 140px;
+  padding-left: 20px;
+  z-index: 3;
+}
+
+#time-info h1, #time-info i {
+  display: inline-block;
+  padding-right: 20px;
+}
+
+#time-info .date {
+  width: 200px;
+}
+
+#time-info .day {
+  width: 40px;
+}
+
+#time-info .time {
+  width: 150px;
+}
+
+#time-info i {
+  font-size: 1.4em;
+}
