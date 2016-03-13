@@ -3,13 +3,13 @@ var tweetIndex = 0,
   GROUP_MS = 60 * 60 * 1000,
   TWEET_SIZE = 6,
   TIME_BAR_HEIGHT = 40,
-  FROM_COLOR = [190, 190, 190],
+  FROM_COLOR = [80, 80, 80],
   TO_COLOR = [255, 0, 26],
   play = true,
-  TIME_WINDOW = 7 * 24 * 60 * 60 * 1000;
+  TIME_WINDOW = 1 * 24 * 60 * 60 * 1000;
 
-var timeline = {}, data, usJSON, dataGroupedByTime, timeInt, startTimeInt, endTimeInt,
-  timeWidth, colorFromArray, intAmount, intFadeColor, timeInfoElement;
+var timeline = {}, data, selectedTime, dataGroupedByTime, timeInt, startTimeInt, endTimeInt,
+  timeWidth, colorFromArray, intFadeColor, timeInfoElement, detailsElement, showDetail;
 
 var UNITED_STATES = {
   top: 55,
@@ -57,31 +57,36 @@ function setup() {
   endTimeInt = _.toNumber(_.max(_.keys(dataGroupedByTime)));
   // endTimeInt = startTimeInt + 1000;
   timeWidth = width/(endTimeInt - startTimeInt);
-  intAmount = GROUP_MS/TIME_WINDOW;
-  intFadeColor = colorFromArray(fadeColor([255, 255, 255], intAmount));
+  setTimeBoxes();
+
+  intFadeColor = colorFromArray(fadeColor([255, 255, 255], GROUP_MS/TIME_WINDOW));
 
   timeInfoElement = new p5.Element(document.createElement('div'));
   timeInfoElement.parent('time-info');
 }
 
 function draw() {
-  var mouseTime = getMouseTime(mouseX, mouseY);
-  if(_.isEmpty(mouseTime) && play){
-    // fadeOverTime();
+  selectedTime = getMouseTime(mouseX, mouseY);
+  if(!selectedTime && play){
     if(timeInt > endTimeInt){
       return;
     }
+    fadeOverTime();
     mapAtTime(timeInt);
     timeInt ++;
-  } else if(!_.isEmpty(mouseTime)){
+  } else if(selectedTime){
     clear();
-    mapAtTime(mouseTime);
-    timeInt = mouseTime;
+    mapAtTime(selectedTime);
+    timeInt = selectedTime;
   }
 }
 
 function mousePressed(){
-  togglePlayState();
+  if(selectedTime){
+    stop();
+  } else {
+    togglePlayState();
+  }
 }
 
 function togglePlayState(){
@@ -93,11 +98,11 @@ function stop(){
 }
 
 function fadeOverTime(){
-  blendMode(SCREEN);
+  blendMode(REPLACE);
   noStroke();
   fill(intFadeColor);
   rect(0, 0, width, height);
-  blendMode(BLEND);
+  // blendMode(BLEND);
 }
 
 function calcGridSize(tweets){
@@ -110,9 +115,8 @@ function calcGridSize(tweets){
 }
 
 function getMapBounds(tweets){
-  var lats, longs;
-  lats = _.map(tweets, _.property('Lat'));
-  longs = _.map(tweets, _.property('Lon'));
+  var lats = _.map(tweets, _.property('Lat'));
+  var longs = _.map(tweets, _.property('Lon'));
   latMin = _.min(lats);
   latMax = _.max(lats);
   longMin = _.min(longs);
@@ -121,45 +125,87 @@ function getMapBounds(tweets){
   return {latMin: latMin, latMax: latMax, longMin: longMin, longMax: longMax};
 }
 
+function showDetails(currentTimeInt){
+  var tweets = dataGroupedByTime[currentTimeInt];
+  var tweetsHTML = _.map(tweets, showDetail).join('');
+  detailsElement.html(tweetsHTML);
+  detailsElement.elt.parentNode.classList.add('active');
+}
+
+function makeDetail(){
+  var itemWrapper = document.createElement('li');
+  var tweetElement = document.createElement('blockquote');
+  var timeElement = document.createElement('i');
+  var topicElement = document.createElement('p');
+
+  itemWrapper.classList.add('detail');
+  tweetElement.classList.add('detail-tweet');
+  timeElement.classList.add('detail-time');
+  topicElement.classList.add('detail-topic');
+
+  itemWrapper.appendChild(topicElement);
+  itemWrapper.appendChild(tweetElement);
+  itemWrapper.appendChild(timeElement);
+
+  return function showDetail(tweet){
+    var tweetItem = itemWrapper.cloneNode(true);
+    tweetItem.children[0].innerHTML = _.capitalize(tweet.Tag);
+    tweetItem.children[1].innerHTML = tweet.Tweet;
+    tweetItem.children[2].innerHTML = tweet.Date;
+
+    return tweetItem.outerHTML;
+  };
+}
+
 function mapAtTime(currentTimeInt){
   showTime(currentTimeInt);
   updateTimeInfo(currentTimeInt);
   _.map(dataGroupedByTime[currentTimeInt], drawTweet);
 }
 
+function setTimeBoxes(){
+  var timeIntRange = _.range(startTimeInt, endTimeInt + 1, 1);
+
+  _.each(timeIntRange, function(currentTimeInt){
+    var barHeight = 2;
+    if(!_.isEmpty(dataGroupedByTime[currentTimeInt])){
+      barHeight = dataGroupedByTime[currentTimeInt].length;
+    }
+
+    var timeX = map(currentTimeInt, startTimeInt, endTimeInt, 0, width);
+    var timebox = {x: timeX, y: height - barHeight, width: timeWidth, height: barHeight};
+    timeline[currentTimeInt] = {
+      left: timebox.x,
+      right: timebox.x + timebox.width,
+      top: _.min([timebox.y, height - TIME_BAR_HEIGHT]),
+      bottom: height
+    };
+    _.extend(timeline[currentTimeInt], timebox);
+  });
+}
+
 function showTime(currentTimeInt){
   var averageNeg;
-  var timeX = map(currentTimeInt, startTimeInt, endTimeInt, 0, width);
-  var barHeight = 2;
 
   if(_.isEmpty(dataGroupedByTime[currentTimeInt])){
     fill(fadeColor([0,0,0], 0.1));
     stroke(fadeColor([0,0,0], 0.1));
   }else{
     averageNeg = averageSentiment(dataGroupedByTime[currentTimeInt]);
-    barHeight = dataGroupedByTime[currentTimeInt].length;
     sentimentColor = lerpColor(colorFromArray(FROM_COLOR), colorFromArray(TO_COLOR), averageNeg);
 
     fill(sentimentColor);
     stroke(sentimentColor);
   }
-  timebox = {x: timeX, y: height - barHeight, width: timeWidth, height: barHeight};
-  timeline[currentTimeInt] = {
-    left: timebox.x,
-    right: timebox.x + timebox.width,
-    top: _.min([timebox.y, height - TIME_BAR_HEIGHT]),
-    bottom: height
-  };
 
   // noStroke();
-  rect(timebox.x, timebox.y, timebox.width, timebox.height);
+  rect(timeline[currentTimeInt].x, timeline[currentTimeInt].y, timeline[currentTimeInt].width, timeline[currentTimeInt].height);
 }
 
 function getMouseTime(x, y){
-  var mouseTime = _(timeline).pickBy(function(timebound){
+  return _(timeline).pickBy(function(timebound){
     return inBounds(x, y, timebound);
-  }).keys().first();
-  return mouseTime;
+  }).keys().first() || false;
 }
 
 function updateTimeInfo(currentTimeInt){
