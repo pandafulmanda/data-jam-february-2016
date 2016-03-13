@@ -5,7 +5,7 @@ var tweetIndex = 0,
   TIME_BAR_HEIGHT = 40,
   FROM_COLOR = [190, 190, 190],
   TO_COLOR = [255, 0, 26],
-  play = false,
+  play = true,
   TIME_WINDOW = 7 * 24 * 60 * 60 * 1000;
 
 var timeline = {}, data, usJSON, dataGroupedByTime, timeInt, startTimeInt, endTimeInt,
