@@ -91,8 +91,10 @@ function mousePressed(){
     stop();
     showDetails(selectedTime);
   } else {
-    hideDetails();
     togglePlayState();
+    if (!play) {
+      hideDetails();
+    }
   }
 }
 
@@ -132,7 +134,12 @@ function getMapBounds(tweets){
   return {latMin: latMin, latMax: latMax, longMin: longMin, longMax: longMax};
 }
 
-function showDetails(currentTimeInt){
+function showDetails(){
+  // updateDetails(currentTimeInt);
+  detailsElement.elt.parentNode.classList.add('active');
+}
+
+function updateDetails(currentTimeInt){
   var tweets = dataGroupedByTime[currentTimeInt];
   var tweetsGroupsByTopic = _.groupBy(tweets, 'Tag');
   var tweetsByTopic = _.mapValues(tweetsGroupsByTopic, 'length');
@@ -144,7 +151,6 @@ function showDetails(currentTimeInt){
   updatePieChart(tweetsByTopic);
   updatePieChart(tweetsByNeg);
   updateTotalLabel(tweetsByTopic);
-  detailsElement.elt.parentNode.classList.add('active');
 }
 
 function makeBlankDetails(){
@@ -287,6 +293,7 @@ function makeDetail(){
 function mapAtTime(currentTimeInt){
   showTime(currentTimeInt);
   updateTimeInfo(currentTimeInt);
+  updateDetails(currentTimeInt);
   _.map(dataGroupedByTime[currentTimeInt], drawTweet);
 }
 
