@@ -37,6 +37,10 @@ canvas {
   padding: 0;
 }
 
+#details h2 {
+  text-align: center;
+}
+
 .detail {
   border-bottom: 1px dotted #333;
 }
@@ -74,4 +78,69 @@ canvas {
 
 #time-info i {
   font-size: 1.4em;
+}
+
+svg.chart {
+  transform: rotate(-90deg);
+  background: #DDD;
+  border-radius: 50%;
+  display: inline-block;
+  width: 100px;
+  height: 100px;
+  margin-left: 25%;
+  margin-right: 20px;
+}
+
+circle.pie {
+  fill: transparent;
+  stroke-width: 50;
+  stroke-dasharray: 0 158;
+  transition: stroke-dasharray .3s ease;
+}
+
+.pie-labels {
+  display: inline-block;
+}
+
+.pie-labels label {
+  display: block;
+}
+.pie-labels label strong {
+  display: inline-block;
+  margin-left: 10px;
+}
+
+label[data-term]::before {
+  content: attr(data-term);
+  text-transform: capitalize;
+}
+
+[data-term='depressed'] {
+  stroke: #7b3294;
+  color: #7b3294;
+}
+
+[data-term='depression'] {
+  stroke: #c2a5cf;
+  color: #c2a5cf;
+}
+
+[data-term='suicide'] {
+  stroke: #a6dba0;
+  color: #a6dba0;
+}
+
+[data-term='suicidal'] {
+  stroke: #008837;
+  color: #008837;
+}
+
+[data-term='neutral'] {
+  stroke: rgba(80, 80, 80, 1);
+  color: rgba(80, 80, 80, 1);
+}
+
+[data-term='neg'] {
+  stroke: rgba(255, 0, 26, 1);
+  color: rgba(255, 0, 26, 1);
 }

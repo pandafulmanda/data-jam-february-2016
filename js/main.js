@@ -63,6 +63,11 @@ function setup() {
 
   timeInfoElement = new p5.Element(document.createElement('div'));
   timeInfoElement.parent('time-info');
+
+  detailsElement = new p5.Element(document.createElement('ul'));
+  detailsElement.parent('details');
+  detailsElement.elt.parentNode.style.height = + height + 'px;';
+  detailsElement.html(makeBlankDetails());
 }
 
 function draw() {
@@ -84,7 +89,9 @@ function draw() {
 function mousePressed(){
   if(selectedTime){
     stop();
+    showDetails(selectedTime);
   } else {
+    hideDetails();
     togglePlayState();
   }
 }
@@ -127,9 +134,129 @@ function getMapBounds(tweets){
 
 function showDetails(currentTimeInt){
   var tweets = dataGroupedByTime[currentTimeInt];
-  var tweetsHTML = _.map(tweets, showDetail).join('');
-  detailsElement.html(tweetsHTML);
+  var tweetsGroupsByTopic = _.groupBy(tweets, 'Tag');
+  var tweetsByTopic = _.mapValues(tweetsGroupsByTopic, 'length');
+  var tweetsByNeg = _(['neg', 'neutral'])
+    .zipObject(_.partition(tweets, function(tweet){ return tweet.Neg === 1;}))
+    .mapValues('length')
+    .value();
+
+  updatePieChart(tweetsByTopic);
+  updatePieChart(tweetsByNeg);
+  updateTotalLabel(tweetsByTopic);
   detailsElement.elt.parentNode.classList.add('active');
+}
+
+function makeBlankDetails(){
+  var details = [makeBlankTotalLabel(), makeBlankPieChartForTerms(), makeBlankPieChartForNeg()];
+
+  return _.map(details, _.property('outerHTML')).join('');
+}
+
+function updateTotalLabel(parts){
+  var total = _(parts).values().sum();
+  var countElement = document.getElementById('total-tweets-count');
+  countElement.innerHTML = total;
+}
+
+function makeBlankTotalLabel(){
+  var wrapper = document.createElement('li');
+  var heading = document.createElement('h2');
+  heading.innerHTML = 'Total: <i id="total-tweets-count"></i>'
+  wrapper.appendChild(heading);
+  return wrapper;
+}
+
+function makeBlankPieChartForNeg(){
+  var parts = { neg: 0, neutral: 0};
+
+  return makePieChart(parts, 'Tweets by Neg');
+}
+
+function makeBlankPieChartForTerms(){
+  var parts = {};
+
+  _.each(tagsToPlot, function(tag){
+    parts[tag] = 0;
+  });
+
+  return makePieChart(parts, 'Tweets by topic');
+}
+
+function updatePieChart(parts){
+  var partsEls = makePieProperties(parts);
+
+  _.each(partsEls, function(partEl){
+    var piePiece = document.querySelector('.pie[data-term=' + partEl.partFor + ']');
+    var label = document.querySelector('label[data-term=' + partEl.partFor + ']');
+    piePiece.style.strokeDasharray = partEl.dash;
+    label.innerHTML = '<strong>' + partEl.count + '</strong>';
+  });
+}
+
+function makePieChart(parts, title){
+  var wrapper = document.createElement('li');
+  var heading = document.createElement('h2');
+  var chart = document.createElement('svg');
+  chart.classList.add('chart');
+
+  var pieceElement = document.createElement('circle');
+  pieceElement.classList.add('pie');
+  pieceElement.setAttribute('r', 25);
+  pieceElement.setAttribute('cx', 50);
+  pieceElement.setAttribute('cy', 50);
+
+  var labelsElement = document.createElement('label');
+  var labelsWrapper = document.createElement('div');
+  labelsWrapper.classList.add('pie-labels');
+
+  var partsEls = makePieProperties(parts);
+
+  var pieces = _.map(partsEls, function(partEl){
+    var piece = pieceElement.cloneNode();
+    piece.style.strokeDasharray = partEl.dash;
+    piece.dataset.term = partEl.partFor;
+    return piece.outerHTML;
+  });
+
+  var labels = _.map(partsEls, function(partEl){
+    var label = labelsElement.cloneNode();
+    label.dataset.term = partEl.partFor;
+    label.innerHTML = '<strong>' + partEl.count + '</strong>';
+    return label.outerHTML;
+  });
+
+  labelsWrapper.innerHTML = labels.join('');
+
+  heading.innerHTML = title;
+  chart.innerHTML = pieces.reverse().join('');
+  wrapper.appendChild(heading);
+  wrapper.appendChild(chart);
+  wrapper.appendChild(labelsWrapper);
+
+  return wrapper;
+}
+
+function makePieProperties(parts){
+  var total = _(parts).values().sum();
+
+  var partsCalculated = [];
+
+  var partsFor = _.keys(parts).sort();
+
+  var partsEls = _.map(partsFor, function(partFor, index){
+    var previous = partsCalculated[index - 1] || 0;
+    var count = parts[partFor];
+    partsCalculated[index] = previous + count;
+    var resultingDash = (partsCalculated[index]/total) * Math.PI/2 * 100 + ' ' + Math.PI/2 * 100;
+    return {count: count, dash: resultingDash, partFor: partFor.toLowerCase()};
+  });
+
+  return partsEls;
+}
+
+function hideDetails(){
+  detailsElement.elt.parentNode.classList.remove('active');
 }
 
 function makeDetail(){
