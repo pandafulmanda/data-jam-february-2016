@@ -66,7 +66,7 @@ function setup() {
 
   detailsElement = new p5.Element(document.createElement('ul'));
   detailsElement.parent('details');
-  detailsElement.elt.parentNode.style.height = + height + 'px;';
+  detailsElement.elt.parentNode.style = 'height: ' + height + 'px;';
   detailsElement.html(makeBlankDetails());
 }
 
@@ -86,10 +86,26 @@ function draw() {
   }
 }
 
+function keyPressed() {
+  if (keyCode === DOWN_ARROW) {
+    togglePlayState();
+  } else if (keyCode === LEFT_ARROW) {
+    stop();
+    timeInt --;
+    mapAtTime(timeInt);
+    showDetails();
+  } else if (keyCode === RIGHT_ARROW) {
+    stop();
+    timeInt ++;
+    mapAtTime(timeInt);
+    showDetails();
+  }
+}
+
 function mousePressed(){
   if(selectedTime){
     stop();
-    showDetails(selectedTime);
+    showDetails();
   } else {
     togglePlayState();
     if (!play) {
@@ -148,13 +164,25 @@ function updateDetails(currentTimeInt){
     .mapValues('length')
     .value();
 
+  var tweetsByHash = {};
+
+  _.each(tweets, function(tweet){
+    var hashtags = tweet.Tweet.match(/[#]+[A-Za-z0-9-_]+/g);
+    _.each(hashtags, function(hashtag){
+      tweetsByHash[hashtag] = tweetsByHash[hashtag] || 0;
+      tweetsByHash[hashtag]++;
+    });
+  });
+
+
   updatePieChart(tweetsByTopic);
   updatePieChart(tweetsByNeg);
   updateTotalLabel(tweetsByTopic);
+  updateHashTagsList(tweetsByHash);
 }
 
 function makeBlankDetails(){
-  var details = [makeBlankTotalLabel(), makeBlankPieChartForTerms(), makeBlankPieChartForNeg()];
+  var details = [makeBlankTotalLabel(), makeBlankPieChartForTerms(), makeBlankPieChartForNeg(), makeBlankHashTagsList()];
 
   return _.map(details, _.property('outerHTML')).join('');
 }
@@ -163,6 +191,30 @@ function updateTotalLabel(parts){
   var total = _(parts).values().sum();
   var countElement = document.getElementById('total-tweets-count');
   countElement.innerHTML = total;
+}
+
+function updateHashTagsList(tweetsByHash){
+  var hashtagsElement = document.getElementById('hashtags');
+  var hashtagEl = document.createElement('label');
+  var hashes = _.map(tweetsByHash, function(count, hashtag){
+    var hashTagLabel = hashtagEl.cloneNode();
+    hashTagLabel.dataset.term = hashtag;
+    hashTagLabel.innerHTML = '<strong>' + count + '</strong>';
+    return hashTagLabel.outerHTML;
+  });
+  hashtagsElement.innerHTML = hashes.join('');
+}
+
+function makeBlankHashTagsList(){
+  var wrapper = document.createElement('li');
+  var heading = document.createElement('h2');
+  var labels = document.createElement('div');
+
+  labels.id = 'hashtags';
+  heading.innerHTML = 'Topics/Hashtags'
+  wrapper.appendChild(heading);
+  wrapper.appendChild(labels);
+  return wrapper;
 }
 
 function makeBlankTotalLabel(){
