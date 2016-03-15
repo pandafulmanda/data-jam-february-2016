@@ -92,11 +92,13 @@ function keyPressed() {
   } else if (keyCode === LEFT_ARROW) {
     stop();
     timeInt --;
+    fadeOverTime();
     mapAtTime(timeInt);
     showDetails();
   } else if (keyCode === RIGHT_ARROW) {
     stop();
     timeInt ++;
+    fadeOverTime();
     mapAtTime(timeInt);
     showDetails();
   }
