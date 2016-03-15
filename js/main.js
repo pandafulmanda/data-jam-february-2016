@@ -6,7 +6,8 @@ var tweetIndex = 0,
   FROM_COLOR = [80, 80, 80],
   TO_COLOR = [255, 0, 26],
   play = true,
-  TIME_WINDOW = 1 * 24 * 60 * 60 * 1000;
+  TIME_WINDOW = 1 * 24 * 60 * 60 * 1000,
+  SPACE = 32;
 
 var timeline = {}, data, selectedTime, dataGroupedByTime, timeInt, startTimeInt, endTimeInt,
   timeWidth, colorFromArray, intFadeColor, timeInfoElement, detailsElement, showDetail;
@@ -79,28 +80,36 @@ function draw() {
     fadeOverTime();
     mapAtTime(timeInt);
     timeInt ++;
-  } else if(selectedTime){
+  } else if(selectedTime && !isLeftOrRightPressed()){
     clear();
     mapAtTime(selectedTime);
     timeInt = selectedTime;
   }
+
+  if(isLeftOrRightPressed()){
+    if (keyCode === LEFT_ARROW) {
+      stop();
+      timeInt --;
+      clear();
+      mapAtTime(timeInt);
+      showDetails();
+    } else if (keyCode === RIGHT_ARROW) {
+      stop();
+      timeInt ++;
+      clear();
+      mapAtTime(timeInt);
+      showDetails();
+    }
+  }
+}
+
+function isLeftOrRightPressed(){
+  return keyIsPressed && _.includes([LEFT_ARROW, RIGHT_ARROW], keyCode);
 }
 
 function keyPressed() {
-  if (keyCode === DOWN_ARROW) {
+  if (keyCode == SPACE) {
     togglePlayState();
-  } else if (keyCode === LEFT_ARROW) {
-    stop();
-    timeInt --;
-    clear();
-    mapAtTime(timeInt);
-    showDetails();
-  } else if (keyCode === RIGHT_ARROW) {
-    stop();
-    timeInt ++;
-    clear();
-    mapAtTime(timeInt);
-    showDetails();
   }
 }
 
