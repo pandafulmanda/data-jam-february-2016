@@ -1,12 +1,12 @@
 var topojsonUrl = 'https://jsonp.afeld.me/?url=http%3A%2F%2Fbl.ocks.org%2Fmbostock%2Fraw%2F4090846%2Fus.json';
 var tweetIndex = 0,
-  GROUP_MS = 60 * 60 * 1000,
+  GROUP_MS = 12 * 60 * 60 * 1000,
   TWEET_SIZE = 6,
   TIME_BAR_HEIGHT = 40,
   FROM_COLOR = [80, 80, 80],
   TO_COLOR = [255, 0, 26],
-  play = true,
-  TIME_WINDOW = 1 * 24 * 60 * 60 * 1000,
+  play = false,
+  TIME_WINDOW = 7 * 24 * 60 * 60 * 1000,
   SPACE = 32;
 
 var timeline = {}, data, selectedTime, dataGroupedByTime, timeInt, startTimeInt, endTimeInt,
@@ -35,6 +35,7 @@ var WORLD = {
 };
 
 var TWEET_OFFSET = 973;
+var TWEET_OFFSET = 0;
 
 var bounds = UNITED_STATES;
 
@@ -190,16 +191,20 @@ function updateDetails(currentTimeInt){
     .mapValues('length')
     .value();
 
-  var tweetsByHash = {};
+  var tweetsByHash = [];
 
   _.each(tweets, function(tweet){
     var hashtags = tweet.Tweet.match(/[#]+[A-Za-z0-9-_]+/g);
     _.each(hashtags, function(hashtag){
-      tweetsByHash[hashtag] = tweetsByHash[hashtag] || 0;
-      tweetsByHash[hashtag]++;
+      var hashtag = hashtag.toLowerCase();
+      var hashIndex = _.findIndex(tweetsByHash, {hashtag: hashtag});
+      if(hashIndex === -1){
+        tweetsByHash.push({hashtag: hashtag, count: 1});
+      } else {
+        tweetsByHash[hashIndex].count ++;
+      }
     });
   });
-
 
   updatePieChart(tweetsByTopic);
   updatePieChart(tweetsByNeg);
@@ -222,12 +227,14 @@ function updateTotalLabel(parts){
 function updateHashTagsList(tweetsByHash){
   var hashtagsElement = document.getElementById('hashtags');
   var hashtagEl = document.createElement('label');
-  var hashes = _.map(tweetsByHash, function(count, hashtag){
-    var hashTagLabel = hashtagEl.cloneNode();
-    hashTagLabel.dataset.term = hashtag;
-    hashTagLabel.innerHTML = '<strong>' + count + '</strong>';
-    return hashTagLabel.outerHTML;
-  });
+  var hashes = _(tweetsByHash)
+    .orderBy(['count', 'hashtag'], ['desc', 'asc'])
+    .map(function(hashCount){
+      var hashTagLabel = hashtagEl.cloneNode();
+      hashTagLabel.dataset.term = hashCount.hashtag;
+      hashTagLabel.innerHTML = '<strong>' + hashCount.count + '</strong>';
+      return hashTagLabel.outerHTML;
+    }).value();
   hashtagsElement.innerHTML = hashes.join('');
 }
 
@@ -381,7 +388,7 @@ function setTimeBoxes(){
   _.each(timeIntRange, function(currentTimeInt){
     var barHeight = 2;
     if(!_.isEmpty(dataGroupedByTime[currentTimeInt])){
-      barHeight = dataGroupedByTime[currentTimeInt].length;
+      barHeight = dataGroupedByTime[currentTimeInt].length/10;
     }
 
     var timeX = map(currentTimeInt, startTimeInt, endTimeInt, 0, width);
