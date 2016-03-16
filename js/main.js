@@ -10,7 +10,8 @@ var tweetIndex = 0,
   SPACE = 32;
 
 var timeline = {}, data, selectedTime, dataGroupedByTime, timeInt, startTimeInt, endTimeInt,
-  timeWidth, colorFromArray, intFadeColor, timeInfoElement, detailsElement, showDetail;
+  timeWidth, intFadeColor, timeInfoElement, detailsElement, showDetail,
+  colorFromArray, fastKey = 0;
 
 var UNITED_STATES = {
   top: 55,
@@ -73,33 +74,41 @@ function setup() {
 
 function draw() {
   selectedTime = getMouseTime(mouseX, mouseY);
+
   if(!selectedTime && play){
     if(timeInt > endTimeInt){
       return;
     }
     fadeOverTime();
-    mapAtTime(timeInt);
     timeInt ++;
   } else if(selectedTime && !isLeftOrRightPressed()){
     clear();
-    mapAtTime(selectedTime);
     timeInt = selectedTime;
+  } else if(isLeftOrRightPressed()){
+    stop();
+    clear();
+    showDetails();
+    if (shouldFast()){
+      navByKey();
+    } else {
+      fastKey ++;      
+    }
   }
 
-  if(isLeftOrRightPressed()){
-    if (keyCode === LEFT_ARROW) {
-      stop();
-      timeInt --;
-      clear();
-      mapAtTime(timeInt);
-      showDetails();
-    } else if (keyCode === RIGHT_ARROW) {
-      stop();
-      timeInt ++;
-      clear();
-      mapAtTime(timeInt);
-      showDetails();
-    }
+  timeInt = constrain(timeInt, startTimeInt, endTimeInt);
+
+  mapAtTime(timeInt);
+}
+
+function shouldFast(){
+  return fastKey > 20;
+}
+
+function navByKey(){
+  if (keyCode === LEFT_ARROW) {
+    timeInt --;
+  } else if (keyCode === RIGHT_ARROW) {
+    timeInt ++;
   }
 }
 
@@ -110,7 +119,13 @@ function isLeftOrRightPressed(){
 function keyPressed() {
   if (keyCode == SPACE) {
     togglePlayState();
+  } else if (isLeftOrRightPressed() && !shouldFast()){
+    navByKey();
   }
+}
+
+function keyReleased(){
+  fastKey = 0;
 }
 
 function mousePressed(){
